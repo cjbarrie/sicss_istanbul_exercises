@@ -1,10 +1,10 @@
-# Workshop: Testing LLM Replication Fragility
+# SICSS Istanbul: Testing LLM Replication Fragility
 
-Companion coding exercises for the "Replication with Language Models"
-presentation (`../presentation/llm_replication_presentation.qmd`). Two
-hands-on modules let you test, hands-on, the two kinds of fragility discussed
-in the talk: prompt sensitivity (Module 1) and how annotation differences
-propagate into downstream statistical conclusions (Module 2).
+Hands-on coding exercises accompanying a talk on "Replication with Language
+Models." Two modules let you test, hands-on, two kinds of fragility in
+LLM-based social science research: prompt sensitivity (Module 1) and how
+annotation differences propagate into downstream statistical conclusions
+(Module 2).
 
 ## Learning objectives
 
@@ -65,10 +65,9 @@ exercises/
 
 ## Setup
 
-**Module 2** needs only Python 3.9+ and pip:
+**Module 2** needs only Python 3.9+ and pip, from this repo's root:
 
 ```bash
-cd exercises
 python3 -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
