@@ -46,6 +46,13 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "outputs"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# ---------------------------------------------------------------------------
+# TODO(2): after you've looked at the results once, change SEED to a
+# different integer (e.g. 7 or 123) and re-run. Every downstream number
+# (rates, coefficients, significance) comes from mock_llm2's seeded noise --
+# does the QUALITATIVE story (loose inflates the Republican rate more than
+# strict does) survive a different seed, or was it a one-off with seed 42?
+# ---------------------------------------------------------------------------
 SEED = 42
 USE_REAL_API = bool(os.getenv("OPENAI_API_KEY")) and os.getenv("USE_REAL_API", "0") == "1"
 
@@ -70,6 +77,12 @@ PROMPTS = {
         "excerpt criticize elites, insiders, or 'the system' in ANY way, or "
         "position the speaker as being on the side of ordinary people?"
     ),
+    # TODO(3) [optional, do this after TODO(1) and TODO(2)]: add a third
+    # condition here with its own key and prompt text (e.g. "moderate" -- a
+    # definition somewhere between strict and loose). If you add one, also
+    # add its name to the two TODO(3) spots further down this file
+    # (`compare_group_rates` and `run_downstream_regressions`) so it flows
+    # through the rest of the analysis.
 }
 
 
@@ -95,6 +108,12 @@ def call_openai(text: str, prompt: str, postfix: str, temperature: float = 0.1,
 
 
 def annotate(text: str, party: str, condition: str, gold_label: int) -> int:
+    """CHECK YOUR UNDERSTANDING: this function branches on USE_REAL_API. If
+    you never set that environment variable, which branch always runs? Now
+    look at `mock_annotate_populism`'s signature in mock_llm2.py -- it takes
+    `gold_label` as an argument. Does that mean the mock is "cheating" by
+    looking at the right answer, or is `gold_label` used differently there
+    than a real LLM call would use it? (Open mock_llm2.py to check.)"""
     if USE_REAL_API:
         return call_openai(text, PROMPTS[condition], PROMPT_POSTFIX)
     return mock_annotate_populism(text, party, condition, gold_label, seed=SEED)
@@ -104,7 +123,12 @@ def build_annotations(df: pd.DataFrame) -> pd.DataFrame:
     """Annotate every text under both conditions. Stores one row per
     (text, condition) -- this is the reproducible record of what the
     'annotators' (prompt conditions) actually said, kept separate from the
-    downstream analysis so you can always re-derive the analysis from it."""
+    downstream analysis so you can always re-derive the analysis from it.
+
+    CHECK YOUR UNDERSTANDING: this loops over `for condition in PROMPTS`,
+    not a hardcoded list of ["strict", "loose"]. If you complete TODO(3) and
+    add a third key to PROMPTS, does this function need any changes to pick
+    it up?"""
     rows = []
     for _, r in df.iterrows():
         for condition in PROMPTS:
@@ -115,6 +139,10 @@ def build_annotations(df: pd.DataFrame) -> pd.DataFrame:
             })
     long_df = pd.DataFrame(rows).dropna(subset=["label"])
     long_df.to_csv(OUTPUT_DIR / "module2_annotations.csv", index=False)
+    # CHECK YOUR UNDERSTANDING: in mock mode, can dropna(subset=["label"])
+    # above ever actually drop a row? Look at mock_annotate_populism -- does
+    # it have a code path that returns None? Now check call_openai's
+    # except clause -- when would REAL API mode produce a None label?
     return long_df
 
 
@@ -123,6 +151,8 @@ def compare_group_rates(df: pd.DataFrame, long_df: pd.DataFrame) -> pd.DataFrame
     wide = wide.merge(df[["uid", "gold_label"]], on="uid")
     wide.to_csv(OUTPUT_DIR / "module2_wide_comparison.csv", index=False)
 
+    # TODO(3) [optional]: if you added a third condition to PROMPTS, add its
+    # name to this list too, or it won't show up in the rates table/plot.
     rates = wide.groupby("party")[["gold_label", "strict", "loose"]].mean()
     rates.to_csv(OUTPUT_DIR / "module2_group_rates.csv")
     return wide, rates
@@ -134,6 +164,8 @@ def run_downstream_regressions(wide: pd.DataFrame) -> pd.DataFrame:
     and loose-condition labels, and compare the coefficient on being
     Republican across the three."""
     results = []
+    # TODO(3) [optional]: if you added a third condition to PROMPTS, add its
+    # name to this list too, so it gets its own regression.
     for col in ["gold_label", "strict", "loose"]:
         model = smf.logit(f"{col} ~ C(party)", data=wide).fit(disp=0)
         results.append({

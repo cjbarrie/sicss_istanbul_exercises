@@ -46,6 +46,19 @@ OUTPUT_DIR = Path(__file__).resolve().parent.parent / "outputs"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 MODEL = "llama3.2:3b"  # pull first: `ollama pull llama3.2:3b`
+
+# ---------------------------------------------------------------------------
+# TODO(2): once you've done TODO(1) below and run the script at least once,
+# come back and change ONE of these three numbers, then re-run and compare
+# the printed alpha values to your previous run. You're observing what moves,
+# not hunting for a "right" answer:
+#   - TEMPERATURE: try 0.0 (as deterministic as this model gets) vs. 0.8
+#     (much more random). Does intra-PSS change?
+#   - N_ITEMS: try 30 (double) vs. 6 (much smaller). Does the inter-PSS line
+#     look smoother or noisier with more/fewer items?
+#   - INTRA_ITERATIONS: try 15. Has alpha already "settled" by run 5, or does
+#     it keep drifting with more repeats?
+# ---------------------------------------------------------------------------
 TEMPERATURE = 0.1  # Paper 1's own conservative default for annotation calls
 N_ITEMS = 15  # how many manifesto sentences to annotate (keep small & fast)
 INTRA_ITERATIONS = 5  # repeated runs of the *same* prompt
@@ -80,7 +93,15 @@ def annotate_ollama(text: str, prompt: str) -> str:
     `annotation_function(item, prompt)` -- `prompt` already has the postfix
     composed in by the package for intra_pss (see ORIGINAL_PROMPT/PROMPT_POSTFIX
     above); for manual_inter_pss, each variant's full text (with its own
-    postfix) is supplied directly from PROMPT_VARIANTS below."""
+    postfix) is supplied directly from PROMPT_VARIANTS below.
+
+    CHECK YOUR UNDERSTANDING: this function never appears in a loop anywhere
+    in this file, yet it gets called hundreds of times. Search this file for
+    every place `annotation_function=annotate_ollama` and `self.annotation_function(`
+    would apply -- who is actually deciding how many times, and with which
+    (item, prompt) pairs, this function runs: this script, or the
+    `promptstability` package?
+    """
     response = ollama.chat(
         model=MODEL,
         messages=[
@@ -95,8 +116,12 @@ def annotate_ollama(text: str, prompt: str) -> str:
 
 def parse_label(raw: str):
     """`parse_function`: turn Ollama's structured JSON string into an int
-    label (or None if something went wrong -- worth inspecting, see
-    reflection question 4)."""
+    label (or None if something went wrong).
+
+    CHECK YOUR UNDERSTANDING: `format=LABEL_SCHEMA` already forces Ollama to
+    return valid JSON matching the schema. Given that, why does this function
+    still wrap the parsing in a `try/except` at all -- what could still go
+    wrong downstream of a valid JSON response?"""
     try:
         return json.loads(raw)["label"]
     except (json.JSONDecodeError, KeyError, TypeError):
@@ -116,6 +141,13 @@ def parse_label(raw: str):
 # resolution across the rewording spectrum (Paper 1 itself uses 25
 # temperature levels; we use 6 to keep this fast). You don't need to edit
 # them, but you're welcome to.
+#
+# CHECK YOUR UNDERSTANDING: the row below with "original_prompt": True gets
+# annotated and saved just like every other row. Before running anything,
+# look up `manual_inter_pss` in the installed package
+# (`python -c "import promptstability, inspect; print(inspect.getsource(promptstability.PromptStabilityAnalysis.manual_inter_pss))"`)
+# and check: does the alpha calculation actually use this row's labels, or
+# does the method filter it out first?
 #
 # Run the script once with the variants below as a baseline, then rewrite
 # YOUR three tiers in your own words and re-run to compare.

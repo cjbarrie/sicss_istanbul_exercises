@@ -51,6 +51,8 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "outputs"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# TODO(2) in the starter exercise: try changing this seed and re-running to
+# see whether the qualitative story survives a different noise realization.
 SEED = 42
 USE_REAL_API = bool(os.getenv("OPENAI_API_KEY")) and os.getenv("USE_REAL_API", "0") == "1"
 
@@ -109,6 +111,9 @@ def call_openai(text: str, prompt: str, postfix: str, temperature: float = 0.1,
 
 
 def annotate(text: str, party: str, condition: str, gold_label: int) -> int:
+    """See the starter exercise's "Check Your Understanding" for what this
+    function's branching and mock_annotate_populism's use of gold_label
+    actually mean."""
     if USE_REAL_API:
         return call_openai(text, PROMPTS[condition], PROMPT_POSTFIX)
     return mock_annotate_populism(text, party, condition, gold_label, seed=SEED)

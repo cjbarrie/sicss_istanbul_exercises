@@ -82,7 +82,9 @@ one-time install.
 
 ## Task
 
-1. Run `starter.py` once, unmodified:
+1. **Before running anything**, read through `starter.py` once and work
+   through "Check Your Understanding" below with your group.
+2. Run `starter.py` unmodified:
    ```bash
    cd exercises/module_1_prompt_stability
    python starter.py
@@ -91,16 +93,16 @@ one-time install.
    `outputs/module1_inter_pss_plot.png`. **Read "What to expect" below
    before deciding whether your result looks right** -- there is no single
    correct shape for this plot.
-2. Open `starter.py` and find `PROMPT_VARIANTS` (marked `TODO(1)`). Rewrite
+3. Open `starter.py` and find `PROMPT_VARIANTS` (marked `TODO(1)`). Rewrite
    the six variant strings **at the three tiers marked TODO** (0.5, 2.0, 4.0
    -- trivial/moderate/drastic rewording) in your own words -- keep asking
    the same question (left-wing vs. right-wing on economic issues), but
-   phrase it yourself. (The other three temperature levels, 1.0/3.0/5.0, are
-   pre-written and just add resolution to the plot -- you don't need to
-   touch them.)
-3. Re-run the script. Compare your new alpha values and plot to the original
-   -- as a *comparison*, not a check for whether either run is "correct."
-4. **Bonus:** run `python ollama_repeated_check.py` -- a Paper-2-style check
+   phrase it yourself. Re-run and compare to your first run.
+4. Find `TODO(2)` (just above `TEMPERATURE`/`N_ITEMS`/`INTRA_ITERATIONS`).
+   Change **one** of these three numbers, re-run, and compare the new alpha
+   values to your previous run. Repeat with a different number changed if
+   you have time.
+5. **Bonus:** run `python ollama_repeated_check.py` -- a Paper-2-style check
    of whether a local model is truly deterministic at temperature=0.
 
 **Moving on to Module 2?** Run `deactivate` first. Module 2 uses a
@@ -161,32 +163,34 @@ agreement there, that (unlike the inter-PSS plot) is worth flagging in
 discussion.
 
 
+## Check Your Understanding
+
+Work through these with your group **before or right after your first run**
+-- they're about what the code does, not about what number came out. You
+can answer them by reading `starter.py`, not by running it.
+
+1. `annotate_ollama(text, prompt)` is passed into `PromptStabilityAnalysis`
+   as `annotation_function`. Who actually calls this function and decides
+   how many times -- this script, or the `promptstability` package?
+2. `format=LABEL_SCHEMA` already forces Ollama to return valid JSON. So why
+   does `parse_label` still need a `try/except`?
+3. The `PROMPT_VARIANTS` list includes a row marked `"original_prompt": True`.
+   Does `manual_inter_pss` actually use that row's label when it computes
+   inter-PSS, or does it filter that row out first? (Check the comprehension
+   note next to it in the code for how to find out.)
+4. In plain language, what's the difference between what `intra_pss` and
+   `manual_inter_pss` each hold constant, and what each one varies?
+
 ## Reflection questions
 
-1. Compare your intra-PSS to your inter-PSS. Even if the inter-PSS *line*
-   wasn't a clean decline, was inter-PSS generally lower than intra-PSS?
-   Why might rewording a prompt introduce more disagreement than simply
-   re-running it, whether or not that shows up as a smooth trend at this
-   sample size?
-2. Look at `outputs/module1_inter_annotations.csv`. Are there specific
-   manifesto sentences whose label flips across *every* variant, versus ones
-   that stay stable no matter how the prompt is worded? What does that
-   suggest about which sentences are inherently ambiguous vs. clearly
-   one-sided -- independent of whatever the overall alpha values were?
-3. Paper 1 argues low (or noisy) stability is a *diagnostic*, not proof the
-   labels are wrong. If you saw a low or erratic inter-PSS in a real
-   project, what two or three things would you check or change -- sample
-   size, number of prompt variants, the prompt itself, the model -- before
-   concluding anything about whether the model "works" for this task?
-4. This module ran on only 15 items and 2 variants per temperature to keep
-   it fast. Based on what you saw, do you think doubling the items would
-   settle the curve down, doubling the variants per temperature would,
-   both, or neither? What would you actually try first, and why?
-5. Ollama's structured output should make malformed responses rare. Did you
-   see any `None` labels in the output CSVs anyway (check for missing rows)?
-   What would you do about them in a real pipeline?
-6. `ollama_repeated_check.py` pins both `temperature=0` *and* a `seed`. Paper
-   2 found that temperature=0 alone did not guarantee determinism for closed
-   models. Why might a `seed` parameter matter in addition to temperature,
-   and why is a closed API less likely to expose (or honor) one the way a
-   local model does?
+1. Why would repeating the *identical* prompt tend to be more reliable than
+   asking the same underlying question in different words -- in general,
+   regardless of what your specific run happened to show?
+2. Paper 1 argues that low or noisy stability is a *diagnostic*, not proof
+   that a model's labels are wrong. What's the difference between "this
+   construct is genuinely ambiguous" and "this pipeline just needs more
+   items or more prompt variants to get a reliable estimate" -- and what
+   would you actually do differently in each case?
+3. This exercise deliberately runs on a small sample and few prompt variants
+   to stay fast. What does a real research project gain -- and what does it
+   cost -- by scaling both of those up before trusting a PSS estimate?
