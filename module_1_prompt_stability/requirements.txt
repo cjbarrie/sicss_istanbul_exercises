@@ -1,0 +1,4 @@
+promptstability
+ollama
+pandas
+matplotlib

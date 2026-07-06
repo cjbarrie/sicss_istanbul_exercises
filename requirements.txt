@@ -1,0 +1,10 @@
+# Shared dependencies for Module 2 (and general use).
+# Module 1 has its OWN requirements file (module_1_prompt_stability/requirements.txt)
+# because the real `promptstability` package requires Python 3.8-3.10 specifically --
+# see module_1_prompt_stability/README.md for setup.
+pandas
+numpy
+matplotlib
+statsmodels
+simpledorff
+openai
